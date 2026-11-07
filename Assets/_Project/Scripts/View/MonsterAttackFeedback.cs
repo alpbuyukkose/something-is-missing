@@ -77,6 +77,7 @@ public class MonsterAttackFeedback : MonoBehaviour
         public Swing plateWobble = new();
         public Shake tableShake = new();
         public Shake hourglassShake = new();
+        public Shake forkShake = new();
         public Swing lightSwing = new();
     }
 
@@ -86,6 +87,8 @@ public class MonsterAttackFeedback : MonoBehaviour
     [SerializeField] Transform table;
     [Tooltip("Shaken as a whole; the hourglass flip runs on its Body child.")]
     [SerializeField] Transform hourglass;
+    [Tooltip("Its fork (created at runtime) is shaken with forkShake.")]
+    [SerializeField] Pantry pantry;
     [SerializeField] Transform swingLight;
     [Tooltip("Look, count, size, speed and lifetime are edited on this particle system (BiteBurst prefab).")]
     [SerializeField] ParticleSystem burstParticles;
@@ -118,6 +121,7 @@ public class MonsterAttackFeedback : MonoBehaviour
         Add(cam ? cam.transform : null, p.cameraShake);
         Add(table, p.tableShake);
         Add(hourglass, p.hourglassShake);
+        Add(pantry != null && pantry.Fork != null ? pantry.Fork.transform : null, p.forkShake);
         Add(plate, p.plateWobble);
         Add(swingLight, p.lightSwing);
 
@@ -178,9 +182,16 @@ public class MonsterAttackFeedback : MonoBehaviour
             if (target == null) { finished.Add(target); continue; }
             var (pos, rot) = offsets[target];
             target.SetLocalPositionAndRotation(pose.position + pose.rotation * pos, pose.rotation * rot);
-            if (!running.Exists(r => r.target == target)) finished.Add(target);
+            if (!IsRunning(target)) finished.Add(target);
         }
         foreach (var target in finished) basePoses.Remove(target);
+    }
+
+    bool IsRunning(Transform target)
+    {
+        foreach (var r in running)
+            if (r.target == target) return true;
+        return false;
     }
 
     static void AddShake(Running r, float t, ref Vector3 pos, ref Quaternion rot)

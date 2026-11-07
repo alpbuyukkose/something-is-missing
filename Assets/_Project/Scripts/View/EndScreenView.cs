@@ -4,18 +4,22 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 
+// The run's end text. The game event picks the text; Reveal (the dragon's player bite) fades it in.
 public class EndScreenView : MonoBehaviour
 {
     [SerializeField] GameController game;
     [SerializeField] CanvasGroup group;
     [SerializeField] TMP_Text message;
     [SerializeField] TMP_Text hint;
-    [Tooltip("Wait for the dragon to reach the camera before going dark.")]
-    [SerializeField] float showDelay = 2.1f;
+    [Tooltip("Seconds between the bite and the fade.")]
+    [SerializeField] float showDelay = 0.1f;
     [SerializeField] float fadeDuration = 0.4f;
     [SerializeField] string recipeTitle = "The recipe was:";
     [SerializeField] string finalMessage = "You were the missing ingredient.";
+    [SerializeField] string forkMessage = "You fed the dragon a fork.";
     [SerializeField] string restartHint = "Press R to restart";
+
+    string pending;
 
     void Awake() => Hide();
 
@@ -23,6 +27,7 @@ public class EndScreenView : MonoBehaviour
     {
         game.TimeUp += OnTimeUp;
         game.Final += OnFinal;
+        game.ForkEaten += OnForkEaten;
         game.Restarted += Hide;
     }
 
@@ -30,6 +35,7 @@ public class EndScreenView : MonoBehaviour
     {
         game.TimeUp -= OnTimeUp;
         game.Final -= OnFinal;
+        game.ForkEaten -= OnForkEaten;
         game.Restarted -= Hide;
     }
 
@@ -38,15 +44,19 @@ public class EndScreenView : MonoBehaviour
         var text = new StringBuilder(recipeTitle);
         for (int i = 0; i < recipe.Count; i++)
             text.Append($"\n{i + 1}. <color=#{ColorUtility.ToHtmlStringRGB(recipe[i].greyboxColor)}>{recipe[i].displayName}</color>");
-        Show(text.ToString());
+        pending = text.ToString();
     }
 
-    void OnFinal() => Show(finalMessage);
+    void OnFinal() => pending = finalMessage;
+    void OnForkEaten() => pending = forkMessage;
 
-    void Show(string text)
+    // Called when the dragon bites the player. Does nothing outside an ending (e.g. test keys).
+    public void Reveal()
     {
+        if (pending == null) return;
         StopAllCoroutines();
-        StartCoroutine(FadeIn(text));
+        StartCoroutine(FadeIn(pending));
+        pending = null;
     }
 
     IEnumerator FadeIn(string text)
@@ -65,6 +75,7 @@ public class EndScreenView : MonoBehaviour
     void Hide()
     {
         StopAllCoroutines();
+        pending = null;
         group.alpha = 0f;
     }
 }

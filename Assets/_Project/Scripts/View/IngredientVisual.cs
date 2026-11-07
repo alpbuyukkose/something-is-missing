@@ -7,7 +7,14 @@ public static class IngredientVisual
 
     public static GameObject Create(IngredientData data, GameObject greyboxPrefab, Transform parent)
     {
-        if (data.modelPrefab != null) return Object.Instantiate(data.modelPrefab, parent, false);
+        if (data.modelPrefab != null)
+        {
+            var model = Object.Instantiate(data.modelPrefab, parent, false);
+            // Models may come straight from a scene file with their placement baked in; keep only the scale.
+            model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            if (data.tintModel) Tint(model, data.greyboxColor);
+            return model;
+        }
         var visual = Object.Instantiate(greyboxPrefab, parent, false);
         Tint(visual, data.greyboxColor);
         return visual;

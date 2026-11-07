@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Hovered ingredient lifts, leans and spins slowly; one shared spot light shines on it.
+// Hovered ingredient lifts, leans and spins slowly.
 public class IngredientHoverFeedback : MonoBehaviour
 {
     [Header("Ingredient")]
@@ -14,14 +14,6 @@ public class IngredientHoverFeedback : MonoBehaviour
     [Tooltip("Seconds to ease into and out of the hover pose.")]
     [SerializeField] float transitionTime = 0.15f;
 
-    [Header("Light")]
-    [SerializeField] Light hoverLight;
-    [Tooltip("Light position relative to the ingredient's resting pose: X right, Y up, -Z front.")]
-    [SerializeField] Vector3 lightOffset = new(0f, 0.3f, -0.25f);
-    [SerializeField] float lightIntensity = 2f;
-    [Tooltip("Seconds for the light to fade in or out.")]
-    [SerializeField] float lightFade = 0.12f;
-
     class Pose
     {
         public float weight;
@@ -30,8 +22,7 @@ public class IngredientHoverFeedback : MonoBehaviour
 
     readonly Dictionary<IngredientView, Pose> poses = new();
     readonly List<IngredientView> settled = new();
-    IngredientView hovered, lit;
-    float lightWeight;
+    IngredientView hovered;
 
     public void SetHovered(IngredientView view) => hovered = view;
 
@@ -49,8 +40,6 @@ public class IngredientHoverFeedback : MonoBehaviour
             if (!on && pose.weight <= 0f) settled.Add(view);
         }
         foreach (var view in settled) poses.Remove(view);
-
-        UpdateLight();
     }
 
     void Apply(IngredientView view, Pose pose)
@@ -62,25 +51,10 @@ public class IngredientHoverFeedback : MonoBehaviour
             Quaternion.Slerp(Quaternion.identity, target, e));
     }
 
-    void UpdateLight()
-    {
-        if (hoverLight == null) return;
-        if (hovered != null) lit = hovered;
-        lightWeight = Mathf.MoveTowards(lightWeight, hovered != null ? 1f : 0f, Time.deltaTime / Mathf.Max(lightFade, 0.0001f));
-        hoverLight.enabled = lightWeight > 0f && lit != null;
-        if (!hoverLight.enabled) return;
-
-        hoverLight.intensity = lightIntensity * Mathf.SmoothStep(0f, 1f, lightWeight);
-        hoverLight.transform.position = lit.transform.TransformPoint(lit.RestCenter + lightOffset);
-        hoverLight.transform.LookAt(lit.Pivot.position);
-    }
-
     void OnDisable()
     {
         foreach (var view in poses.Keys)
             if (view != null) view.Pivot.SetLocalPositionAndRotation(view.RestCenter, Quaternion.identity);
         poses.Clear();
-        if (hoverLight != null) hoverLight.enabled = false;
-        lightWeight = 0f;
     }
 }

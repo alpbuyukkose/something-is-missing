@@ -3,7 +3,8 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 
-// Reveals a line letter by letter. Write *word* in a line to show it in the emphasis color.
+// Reveals a line letter by letter. Write *word* in a line to show it in the emphasis color,
+// and | to start a new sentence on a cleared line (e.g. "Something is still missing|*YOU*!").
 [RequireComponent(typeof(TMP_Text))]
 public class DialogTypewriter : MonoBehaviour
 {
@@ -30,6 +31,8 @@ public class DialogTypewriter : MonoBehaviour
     [SerializeField] bool jitterLettersSeparately = true;
 
     [Header("Reveal")]
+    [Tooltip("Seconds a finished part stays before the text after | replaces it.")]
+    [SerializeField] float pageHold = 0.8f;
     [SerializeField] float lettersPerSecond = 28f;
     [Tooltip("Fade-in time of a single letter. 0 = appears instantly.")]
     [SerializeField] float letterFadeDuration = 0f;
@@ -76,7 +79,12 @@ public class DialogTypewriter : MonoBehaviour
     readonly List<Vector3> sentenceEndCenters = new();
     float[] revealTimes = System.Array.Empty<float>();
     TMP_MeshInfo[] textSource, glowSource;
-    float startTime;
+    float startTime, lineDuration;
+    string[] pages = System.Array.Empty<string>();
+    int page;
+
+    // True until the last letter of the current line is fully shown.
+    public bool IsTyping => page < pages.Length - 1 || Time.time - startTime < lineDuration;
 
     static readonly int PixelSizeId = Shader.PropertyToID("_PixelSize");
 
@@ -111,7 +119,14 @@ public class DialogTypewriter : MonoBehaviour
 
     public void Play(string line)
     {
-        string plain = Parse(line);
+        pages = line.Split('|');
+        ShowPage(0);
+    }
+
+    void ShowPage(int index)
+    {
+        page = index;
+        string plain = Parse(pages[index].Trim());
         textSource = Layout(text, plain);
         if (glowLayer != null) glowSource = Layout(glowLayer, plain);
         Schedule();
@@ -126,6 +141,9 @@ public class DialogTypewriter : MonoBehaviour
         revealTimes = System.Array.Empty<float>();
         sentenceEndTimes.Clear();
         sentenceEndCenters.Clear();
+        lineDuration = 0f;
+        pages = System.Array.Empty<string>();
+        page = 0;
     }
 
     TMP_MeshInfo[] Layout(TMP_Text target, string plain)
@@ -159,9 +177,11 @@ public class DialogTypewriter : MonoBehaviour
         sentenceEndTimes.Clear();
         sentenceEndCenters.Clear();
         float t = 0f;
+        lineDuration = 0f;
         for (int i = 0; i < count; i++)
         {
             revealTimes[i] = t;
+            lineDuration = t + letterFadeDuration;
             t += 1f / lettersPerSecond;
             char c = info.characterInfo[i].character;
             char next = i + 1 < count ? info.characterInfo[i + 1].character : ' ';
@@ -197,13 +217,14 @@ public class DialogTypewriter : MonoBehaviour
 
     void LateUpdate()
     {
+        if (page < pages.Length - 1 && Time.time - startTime >= lineDuration + pageHold) ShowPage(page + 1);
         if (revealTimes.Length > 0) Apply();
     }
 
     void Apply()
     {
         float elapsed = Time.time - startTime;
-        int sentenceEnd = sentenceEndTimes.FindLastIndex(t => t <= elapsed);
+        int sentenceEnd = LastSentenceEnd(elapsed);
         float since = sentenceEnd >= 0 ? elapsed - sentenceEndTimes[sentenceEnd] : float.MaxValue;
         Vector3 lineCenter = sentenceEnd >= 0 ? sentenceEndCenters[sentenceEnd] : Vector3.zero;
 
@@ -241,6 +262,14 @@ public class DialogTypewriter : MonoBehaviour
         }
         text.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices | TMP_VertexDataUpdateFlags.Colors32);
         if (glowLayer != null) glowLayer.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices | TMP_VertexDataUpdateFlags.Colors32);
+    }
+
+    // Index of the latest sentence end already reached, or -1.
+    int LastSentenceEnd(float elapsed)
+    {
+        for (int i = sentenceEndTimes.Count - 1; i >= 0; i--)
+            if (sentenceEndTimes[i] <= elapsed) return i;
+        return -1;
     }
 
     static float Evaluate(AnimationCurve curve, float since, float duration) =>

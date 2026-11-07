@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::IngredientData
   displayName: Phoenix Feather
   greyboxColor: {r: 0.9411765, g: 0.41568628, b: 0.1254902, a: 1}
-  modelPrefab: {fileID: 0}
+  modelPrefab: {fileID: 3412257265619607655, guid: e59178a8e752d49898ac91c392d2b09a, type: 3}
+  tintModel: 1

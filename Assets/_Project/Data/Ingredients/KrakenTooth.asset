@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::IngredientData
   displayName: Kraken Tooth
   greyboxColor: {r: 0.22352941, g: 0.28627452, b: 0.67058825, a: 1}
-  modelPrefab: {fileID: 0}
+  modelPrefab: {fileID: 7777675435891537379, guid: e59178a8e752d49898ac91c392d2b09a, type: 3}
+  tintModel: 0

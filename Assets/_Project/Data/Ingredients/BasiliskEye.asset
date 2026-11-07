@@ -14,4 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::IngredientData
   displayName: Basilisk Eye
   greyboxColor: {r: 0.8392157, g: 0.22745098, b: 0.9764706, a: 1}
-  modelPrefab: {fileID: 0}
+  modelPrefab: {fileID: -5686293829494914421, guid: e59178a8e752d49898ac91c392d2b09a, type: 3}
+  tintModel: 1

@@ -1,70 +1,127 @@
-using System.Collections;
+using System;
 using UnityEngine;
 
+// Shows the run timer: the sand runs from the top chamber into the bottom one over the whole run,
+// and the hourglass gets more restless as time runs out. It never turns over.
 public class HourglassView : MonoBehaviour
 {
-    [SerializeField] GameController game;
-    [Tooltip("Turned 180° around local Z on reset. The sand objects must be its children.")]
-    [SerializeField] Transform body;
-    [Tooltip("Scaled on local Y, 1 = full chamber. Pivot at the bottom of its chamber.")]
-    [SerializeField] Transform topSand;
-    [SerializeField] Transform bottomSand;
-    [SerializeField] float flipDuration = 0.6f;
+    [Serializable]
+    public class Stage
+    {
+        [Tooltip("Remaining time where this stage is fully reached. 0.8 = 80% left.")]
+        [Range(0f, 1f)] public float remaining = 1f;
+        [Tooltip("Height above the table, world units.")]
+        public float lift;
+        [Tooltip("Tremble rotation, degrees.")]
+        public float angle;
+        [Tooltip("Tremble offset, world units.")]
+        public float offset;
+        [Tooltip("New tremble positions per second.")]
+        public float frequency = 10f;
+    }
 
-    Vector3 topFull, bottomFull;
-    bool started, flipping;
+    [SerializeField] RunTimer timer;
+    [Tooltip("Lifted and trembled. The sand renderers must be its children.")]
+    [SerializeField] Transform body;
+    [Tooltip("Optional (both or none). Chamber-shaped sand using the Hourglass Sand shader; it fills from its bottom up along Body's up axis.")]
+    [SerializeField] Renderer topSand;
+    [SerializeField] Renderer bottomSand;
+
+    [Header("Tension")]
+    [Tooltip("From most time left to least. Values blend between neighbouring stages.")]
+    [SerializeField] Stage[] stages =
+    {
+        new() { remaining = 1f },
+        new() { remaining = 0.8f, angle = 0.6f, offset = 0.001f, frequency = 8f },
+        new() { remaining = 0.55f, angle = 1f, offset = 0.0015f, frequency = 12f },
+        new() { remaining = 0.5f, lift = 0.03f, angle = 1.5f, offset = 0.002f, frequency = 15f },
+        new() { remaining = 0.2f, lift = 0.05f, angle = 4f, offset = 0.005f, frequency = 30f },
+        new() { remaining = 0f, lift = 0.06f, angle = 7f, offset = 0.008f, frequency = 45f },
+    };
+
+    static readonly int SandPlane = Shader.PropertyToID("_SandPlane");
+    MaterialPropertyBlock block;
+    Vector2 topRange, bottomRange; // sand bottom/top heights in Body space
+    Vector3 bodyPosition;
+    Quaternion bodyRotation;
+    float phase, seed;
+    readonly Stage blended = new();
+
+    bool HasSand => topSand != null && bottomSand != null;
 
     void Awake()
     {
-        topFull = topSand.localScale;
-        bottomFull = bottomSand.localScale;
-    }
-
-    void OnEnable() => game.DishStarted += OnDishStarted;
-    void OnDisable() => game.DishStarted -= OnDishStarted;
-
-    void OnDishStarted(int index, int length)
-    {
-        if (started)
-        {
-            StopAllCoroutines();
-            StartCoroutine(Flip());
-        }
-        started = true;
+        bodyPosition = body.localPosition;
+        bodyRotation = body.localRotation;
+        seed = UnityEngine.Random.Range(0f, 100f);
+        if (!HasSand) return;
+        block = new MaterialPropertyBlock();
+        topRange = HeightRange(topSand);
+        bottomRange = HeightRange(bottomSand);
     }
 
     void Update()
     {
-        if (!flipping) SetSand(game.TimeNormalized, 1f - game.TimeNormalized);
+        float remaining = timer.RemainingNormalized;
+        if (HasSand) SetSand(remaining, 1f - remaining);
+        Tremble(Evaluate(remaining));
+    }
+
+    void Tremble(Stage s)
+    {
+        phase += Time.deltaTime * s.frequency; // accumulated so a changing frequency does not jump
+        Vector3 offset = Vector3.up * s.lift + Noise(seed, phase) * s.offset;
+        body.SetLocalPositionAndRotation(
+            bodyPosition + body.parent.InverseTransformVector(offset),
+            bodyRotation * Quaternion.Euler(Noise(seed + 50f, phase) * s.angle));
+    }
+
+    // Blends the two stages around this remaining time.
+    Stage Evaluate(float remaining)
+    {
+        if (stages.Length == 0) return blended;
+        for (int i = 1; i < stages.Length; i++)
+        {
+            Stage a = stages[i - 1], b = stages[i];
+            if (remaining < b.remaining) continue;
+            float t = Mathf.InverseLerp(a.remaining, b.remaining, remaining);
+            blended.lift = Mathf.Lerp(a.lift, b.lift, t);
+            blended.angle = Mathf.Lerp(a.angle, b.angle, t);
+            blended.offset = Mathf.Lerp(a.offset, b.offset, t);
+            blended.frequency = Mathf.Lerp(a.frequency, b.frequency, t);
+            return blended;
+        }
+        return stages[^1];
+    }
+
+    // Smooth noise in -1..1 per axis.
+    static Vector3 Noise(float seed, float t) => new(
+        Mathf.PerlinNoise(seed, t) * 2f - 1f,
+        Mathf.PerlinNoise(seed + 17.3f, t) * 2f - 1f,
+        Mathf.PerlinNoise(seed + 31.7f, t) * 2f - 1f);
+
+    Vector2 HeightRange(Renderer sand)
+    {
+        var b = sand.bounds;
+        float a = body.InverseTransformPoint(b.min).y, c = body.InverseTransformPoint(b.max).y;
+        return new Vector2(Mathf.Min(a, c), Mathf.Max(a, c));
     }
 
     void SetSand(float top, float bottom)
     {
-        SetLevel(topSand, topFull, top);
-        SetLevel(bottomSand, bottomFull, bottom);
+        SetLevel(topSand, topRange, top);
+        SetLevel(bottomSand, bottomRange, bottom);
     }
 
-    static void SetLevel(Transform sand, Vector3 full, float level)
+    // Cuts the sand with a plane that moves with Body, so the tremble tilts the sand with the glass.
+    void SetLevel(Renderer sand, Vector2 range, float level)
     {
-        sand.gameObject.SetActive(level > 0.001f);
-        sand.localScale = new Vector3(full.x, full.y * level, full.z);
-    }
-
-    IEnumerator Flip()
-    {
-        flipping = true;
-        Quaternion start = body.localRotation;
-        float top = topSand.gameObject.activeSelf ? topSand.localScale.y / topFull.y : 0f;
-        float bottom = bottomSand.gameObject.activeSelf ? bottomSand.localScale.y / bottomFull.y : 0f;
-        for (float t = 0f; t < 1f; t += Time.deltaTime / flipDuration)
-        {
-            float e = Mathf.SmoothStep(0f, 1f, t);
-            body.localRotation = start * Quaternion.Euler(0f, 0f, 180f * e);
-            // The upper chamber empties and ends at the bottom, the lower one fills and ends on top.
-            SetSand(Mathf.Lerp(top, 0f, e), Mathf.Lerp(bottom, 1f, e));
-            yield return null;
-        }
-        body.localRotation = start; // symmetric shape: snapping back after 180° is invisible
-        flipping = false;
+        sand.enabled = level > 0.001f;
+        if (!sand.enabled) return;
+        Vector3 normal = body.up;
+        Vector3 point = body.TransformPoint(0f, Mathf.Lerp(range.x, range.y, level), 0f);
+        sand.GetPropertyBlock(block);
+        block.SetVector(SandPlane, new Vector4(normal.x, normal.y, normal.z, -Vector3.Dot(normal, point)));
+        sand.SetPropertyBlock(block);
     }
 }

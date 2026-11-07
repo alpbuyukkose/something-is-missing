@@ -23,7 +23,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3bd2158ec154047c59810adb23ce8cf5, type: 2}
   - {fileID: 11400000, guid: 5ad512cc392d54d3eb1056950c70f15e, type: 2}
   - {fileID: 11400000, guid: 831be0cb691504da696ae5460411717a, type: 2}
+  fork: {fileID: 11400000, guid: d0855782d6da3449789f0e87e754fa59, type: 2}
   recipeLengths: 030000000400000005000000
-  dishDuration: 120
   resolveDelay: 1.4
   nextDishDelay: 1.5

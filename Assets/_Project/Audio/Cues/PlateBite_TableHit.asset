@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4dc1e5f3c48649ceae01dda6c0bbd27, type: 3}
+  m_Name: PlateBite_TableHit
+  m_EditorClassIdentifier: Assembly-CSharp::SoundCue
+  clips:
+  - {fileID: 8300000, guid: 3c936f915e7aa4ed889e33e8133e7430, type: 3}
+  channel: {fileID: 24300006, guid: bec95970881b94180abf6d35dd679804, type: 2}
+  volume: 0.5
+  volumeVariation: 0.05
+  pitch: 1
+  pitchVariation: 0.05
+  delay: 0
