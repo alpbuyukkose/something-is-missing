@@ -50,7 +50,7 @@ public class GameController : MonoBehaviour
         StartDish(0);
     }
 
-    // Time keeps running while serving, so this can cut a serve short.
+    // Time keeps running while serving (except the winning last dish), so this can cut a serve short.
     void OnTimeUp()
     {
         StopAllCoroutines();
@@ -98,6 +98,8 @@ public class GameController : MonoBehaviour
     {
         State = GameState.Serving;
         var result = Recipe.Evaluate(recipe, plate);
+        // The winning bite is not timed, so time cannot run out while the dragon eats the last dish.
+        if (result.IsCorrect && DishIndex + 1 >= config.recipeLengths.Count) timer.Stop();
         Served?.Invoke(result);
         yield return new WaitForSeconds(config.resolveDelay);
 

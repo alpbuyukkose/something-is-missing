@@ -63,10 +63,19 @@ public class GameMenu : MonoBehaviour
     Page page;
     int pendingDifficulty = -1;
     float sfxBase, ambienceBase; // the mixer's own levels, dB
-    Coroutine fade;
+    Coroutine fade, poemRoutine;
+
+    // A browser tab cannot be closed by the game, so WebGL has no Exit.
+#if UNITY_WEBGL && !UNITY_EDITOR
+    static readonly bool CanQuit = false;
+#else
+    static readonly bool CanQuit = true;
+#endif
 
     void Awake()
     {
+        exitButton.gameObject.SetActive(CanQuit);
+        pauseExitButton.gameObject.SetActive(CanQuit);
         startButton.Clicked += () => SetPage(Page.Difficulty);
         exitButton.Clicked += Quit;
         for (int i = 0; i < difficultyButtons.Length; i++)
@@ -141,13 +150,13 @@ public class GameMenu : MonoBehaviour
 
         switch (next)
         {
-            case Page.Title: startButton.Show(); exitButton.Show(); break;
+            case Page.Title: startButton.Show(); if (CanQuit) exitButton.Show(); break;
             case Page.Difficulty: foreach (var b in difficultyButtons) b.Show(); break;
             case Page.Pause:
                 CollapsePause();
                 pauseDifficultyButton.Show();
                 settingsButton.Show();
-                pauseExitButton.Show();
+                if (CanQuit) pauseExitButton.Show();
                 break;
         }
     }
@@ -158,7 +167,15 @@ public class GameMenu : MonoBehaviour
         SetPage(Page.Poem);
         IntroStarted?.Invoke();
         poem.Play(poemText);
-        StartCoroutine(PoemThenStart());
+        poemRoutine = StartCoroutine(PoemThenStart());
+    }
+
+    // Test shortcut (TestKeys): ends the poem and starts the run right away.
+    public void SkipPoem()
+    {
+        if (page != Page.Poem) return;
+        StopCoroutine(poemRoutine);
+        StartGame();
     }
 
     IEnumerator PoemThenStart()

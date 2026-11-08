@@ -12,6 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09c3b84bc42ae446ca4e7337123ae677, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: Assembly-CSharp::GameConfig
+  difficulties:
+  - name: I have nothing to prove.
+    runDuration: 180
+  - name: I can handle pressure.
+    runDuration: 120
+  - name: Do not click. Seriously.
+    runDuration: 88
   ingredients:
   - {fileID: 11400000, guid: 0203391e7eb0649478d430a50cd4999d, type: 2}
   - {fileID: 11400000, guid: 2d44daec2559f4278ac2f693c28b116e, type: 2}

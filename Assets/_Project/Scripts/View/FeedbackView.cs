@@ -25,7 +25,9 @@ public class FeedbackView : MonoBehaviour
 
     [Header("Editor Preview")]
     [Tooltip("Outlines this many sample tiles in the Scene view while not playing. 0 = off.")]
+#pragma warning disable CS0414 // only read in the editor
     [SerializeField] int previewTiles = 5;
+#pragma warning restore CS0414
 
     readonly List<GameObject> tiles = new();
 

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-// The run's single clock: starts with the first dish, never pauses, stops at an ending.
+// The run's single clock: starts with the first dish, never pauses, stops at an ending or when the last dish is served right.
 // The hourglass and the run loops read RemainingNormalized.
 public class RunTimer : MonoBehaviour
 {

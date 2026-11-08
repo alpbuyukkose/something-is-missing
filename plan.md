@@ -358,3 +358,26 @@ Boş Unity 6.3 URP şablonu (`Assets/` içinde sadece SampleScene + TutorialInfo
 - [x] Şiir güncel: There's a dragon down where the sun is forgotten. / Everyone who knows him becomes part of him. / Keep him fed, and maybe you'll feel the sun's warmth again. / You're the missing piece of his bottomless hunger. | For now...
 - [x] Şiir son hali (kullanıcının taslağından): This dragon is not one you know. / He is older than the word itself. / His bottomless hunger has been told a thousand times, and forgotten just as often. / But don't you forget. Him. His hunger. / Every dish you bring him will be missing something. | For now...
 - [x] Kum saati akışı: Hourglass/Body/SandStream particle (stretched, M_SandStream Simple Lit, 220/sn, boyut 0.003-0.0045, Local). HourglassView ömrü alt kum yüzeyine göre ayarlar; sadece süre akarken akar.
+
+## Ekran efektleri (2026-11-08, onaylandı)
+- ScreenEffectsFeature (URP renderer feature): açık ScreenEffect bileşenlerini Order sırasıyla oyun kamerasına uygular (After Post Processing). Başka koda bağlı değil.
+- Ayrı script + shader: RetroEffect (pikselleştirme + posterize + Bayer dither + parlaklık/kontrast/doygunluk), VignetteEffect, FilmGrainEffect, ScanlineEffect. Bileşeni kapat/sil = efekt yok.
+- Sıra: Vignette, Grain → Retro (piksellenip ditherlanır) → Scanline.
+- ScreenEffectsManager: master aç/kapat, Affect Text (menüler, şiir, bitiş ekranı, ejderha yazısı filtreden geçer / üstte temiz çizilir).
+- Layer'lar: ScreenFxUI (Affect Text açıkken menü canvas'ları; post-process'ten sonra, efektlerden önce çizilir → fog/tonemap binmez), ScreenFxExempt (Affect Text kapalıyken ejderha yazısı; efektlerden sonra çizilir). İkisi de PC/Mobile renderer maskelerinden çıkarıldı, RenderObjects feature'larıyla çiziliyor.
+- Grain sRGB'de, PCG hash; Shadow Fade 1 = siyah siyah kalır.
+- Revizyon (2026-11-08): Retro'da Mode = Posterize / Palette. Palette: Oklab'da en yakın renk, dither en yakın iki palet rengi arasında. Dither sadece karanlık (Shadow Range) ve aydınlık (Highlight Range) uçlarda. Paletler ScreenPalette asset'i (Data/Palettes: Butcher, Morgue, Rot, Tallow, Bruise, Bone; Create > Something Is Missing > Screen Palette). Keep Colors (feedback yeşil/sarı) + Keep Tolerance (sadece yakın piksellere uygulanır). Manager'da efekt aç/kapa kutucukları. Varsayılan: Butcher, 540 px, Grain ve Scanline kapalı.
+- Posterize Space: Lightness (Oklab L basamaklanır, ton sabit; gökkuşağı bandı yok) / RGB. Dither desenleri (zayıftan güçlüye): Interleaved Gradient, Bayer 8x8, Bayer 4x4, Checker, White Noise, Bayer 2x2, Horizontal Lines, Diagonal Lines, Crosshatch, Halftone Dots. Grain türleri: Soft, Fine, Colored, Coarse, Streaks. Scanline scroll var, kutu filtreli (parlaklık pulsu yok). Global Volume'e White Balance, Split Toning, Shadows Midtones Highlights, Color Adjustments eklendi (nötr). Volumetric fog'u kullanıcı kapattı (dither ile uyumsuz).
+
+- [x] Kod + shader  - [x] Renderer + sahne  - [x] Test (menü, oyun, bitiş ekranı; Affect Text açık/kapalı)
+
+## Build hazırlığı (2026-11-08)
+- [x] Son test (Play): menü → şiir → oyun, yanlış servis, 3 yemek → Final, süre bitti, çatal, R ile restart; konsol temiz.
+- [x] Test tuşları kapalı: TestKeys sadece `TEST_KEYS` define'ı ile çalışır (editörde de kapalı).
+- [x] WebGL'de Exit butonları gizli (tarayıcı sekmesi kapatılamaz).
+- [x] Player: şirket Isoluen, Unity splash kapalı, Mac Intel + Apple Silicon, WebGL Gzip + Decompression Fallback (itch), WebGL canvas 1280x720. Standalone: tam ekran pencere, 60 FPS sınırı (FrameRateCap).
+- [x] Deneme Mac build'i: 0 hata, ~125 MB, açılıyor.
+- [x] Build'ler `Builds/` (git dışı): Mac (~126 MB), Windows x64 (~108 MB), 0 hata. Burst debug klasörleri `Builds/_DoNotShip`'e taşındı (gönderilmez). Windows build Mac'te denenemedi.
+- [x] Son yemek doğru servis edilince süre durur (yeme sırasında TimeUp olmaz); yanlış servis ve ara yemeklerde süre akar.
+- [x] WebGL build (`Builds/WebGL`). Üç build yeni kodla tekrar alındı.
+- [x] Kum saati sesi (hourglass_pour_very_minimal.wav) döngüye uygun hale getirildi: baştaki 1.5 sn açılış ve sondaki sönme/sessizlik kırpıldı, son 1 sn başa equal-power crossfade ile bağlandı (15.7 sn, dikişsiz). Orijinal git'te.
