@@ -13,6 +13,8 @@ public class DialogTypewriter : MonoBehaviour
     [Header("Look")]
     [Tooltip("Bigger values can push long lines onto a second line.")]
     [SerializeField] float lineFontSize = 2.3f;
+    [Tooltip("Resize the text box to the widest line, so left-aligned lines sit as one block around the box's pivot.")]
+    [SerializeField] bool fitWidthToText;
     [SerializeField] Color textColor = new(0.847f, 0.788f, 0.659f);
     [Tooltip("Color of words written as *word*.")]
     [SerializeField] Color emphasisColor = new(0.878f, 0.271f, 0.169f);
@@ -29,6 +31,12 @@ public class DialogTypewriter : MonoBehaviour
     [SerializeField] float jitterFrequency = 12f;
     [Tooltip("On: each letter trembles on its own. Off: the line trembles as one block.")]
     [SerializeField] bool jitterLettersSeparately = true;
+
+    [Header("Highlight (menus)")]
+    [Tooltip("Extra size at full highlight (hover). 0.08 = 8% bigger.")]
+    [SerializeField] float highlightScale = 0.08f;
+    [Tooltip("Extra jitter at full highlight. 1.5 = 2.5x the idle jitter.")]
+    [SerializeField] float highlightJitter = 1.5f;
 
     [Header("Reveal")]
     [Tooltip("Seconds a finished part stays before the text after | replaces it.")]
@@ -84,6 +92,9 @@ public class DialogTypewriter : MonoBehaviour
     int page;
 
     // True until the last letter of the current line is fully shown.
+    // 0-1, set by MenuButton on hover.
+    public float Highlight { get; set; }
+
     public bool IsTyping => page < pages.Length - 1 || Time.time - startTime < lineDuration;
 
     static readonly int PixelSizeId = Shader.PropertyToID("_PixelSize");
@@ -127,6 +138,7 @@ public class DialogTypewriter : MonoBehaviour
     {
         page = index;
         string plain = Parse(pages[index].Trim());
+        if (fitWidthToText) FitWidth(plain);
         textSource = Layout(text, plain);
         if (glowLayer != null) glowSource = Layout(glowLayer, plain);
         Schedule();
@@ -144,6 +156,13 @@ public class DialogTypewriter : MonoBehaviour
         lineDuration = 0f;
         pages = System.Array.Empty<string>();
         page = 0;
+    }
+
+    void FitWidth(string plain)
+    {
+        text.fontSize = lineFontSize;
+        var box = text.rectTransform;
+        box.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, text.GetPreferredValues(plain, float.PositiveInfinity, float.PositiveInfinity).x + 2f);
     }
 
     TMP_MeshInfo[] Layout(TMP_Text target, string plain)
@@ -229,12 +248,13 @@ public class DialogTypewriter : MonoBehaviour
         Vector3 lineCenter = sentenceEnd >= 0 ? sentenceEndCenters[sentenceEnd] : Vector3.zero;
 
         float lift = Evaluate(bounceCurve, since, bounceDuration) * bounceHeight;
-        float scale = 1f + Evaluate(punchCurve, since, punchDuration) * punchAmount;
+        float scale = (1f + Evaluate(punchCurve, since, punchDuration) * punchAmount) * (1f + Highlight * highlightScale);
         float shake = Evaluate(shakeFalloff, since, shakeDuration) * shakeStrength;
         int shakeStep = shake > 0f ? Mathf.FloorToInt(since * shakeFrequency) : 0;
         Vector3 lineShake = shake > 0f ? RandomOffset(shakeStep, 0) * shake : Vector3.zero;
         int jitterStep = Mathf.FloorToInt(Time.time * jitterFrequency);
-        Vector3 lineJitter = RandomOffset(jitterStep, -1) * jitterStrength;
+        float jitter = jitterStrength * (1f + Highlight * highlightJitter);
+        Vector3 lineJitter = RandomOffset(jitterStep, -1) * jitter;
 
         // Vertex colors are not converted by the TMP shaders in a linear project.
         bool linear = QualitySettings.activeColorSpace == ColorSpace.Linear;
@@ -255,7 +275,7 @@ public class DialogTypewriter : MonoBehaviour
             Vector3 pivot = punchPivot == PunchPivot.EachLetter ? (ch.bottomLeft + ch.topRight) * 0.5f : lineCenter;
             Vector3 offset = Vector3.up * lift;
             if (shake > 0f) offset += shakeLettersSeparately ? RandomOffset(shakeStep, i + 1) * shake : lineShake;
-            if (jitterStrength > 0f) offset += jitterLettersSeparately ? RandomOffset(jitterStep, -(i + 2)) * jitterStrength : lineJitter;
+            if (jitter > 0f) offset += jitterLettersSeparately ? RandomOffset(jitterStep, -(i + 2)) * jitter : lineJitter;
 
             Write(text, textSource, i, pivot, scale, offset, color);
             if (glowLayer != null) Write(glowLayer, glowSource, i, pivot, scale, offset, color);

@@ -12,6 +12,8 @@ public class SoundManager : MonoBehaviour
     class RunLoop
     {
         public SoundCue cue;
+        [Tooltip("Starts with the intro poem instead of the first dish, and keeps playing into the run.")]
+        public bool startWithIntro;
         [Tooltip("Volume multiplier at the start of the run and when time is up, linear in between.")]
         public float volumeAtStart = 1f;
         public float volumeAtEnd = 1f;
@@ -20,6 +22,8 @@ public class SoundManager : MonoBehaviour
     [SerializeField] GameController game;
     [SerializeField] RunTimer timer;
     [SerializeField] DragonRigAnimator dragon;
+    [Tooltip("Optional. Its intro poem starts the loops marked Start With Intro.")]
+    [SerializeField] GameMenu menu;
     [Tooltip("How many sounds can play at once. The oldest is cut when all are busy.")]
     [Min(1)]
     [SerializeField] int voices = 12;
@@ -85,6 +89,7 @@ public class SoundManager : MonoBehaviour
 
     void OnEnable()
     {
+        if (menu != null) menu.IntroStarted += OnIntroStarted;
         dragon.PlayerLunged += OnPlayerLunge;
         dragon.ChewStarted += OnChew;
         dragon.Interrupted += OnInterrupted;
@@ -105,6 +110,7 @@ public class SoundManager : MonoBehaviour
 
     void OnDisable()
     {
+        if (menu != null) menu.IntroStarted -= OnIntroStarted;
         dragon.PlayerLunged -= OnPlayerLunge;
         dragon.ChewStarted -= OnChew;
         dragon.Interrupted -= OnInterrupted;
@@ -131,9 +137,11 @@ public class SoundManager : MonoBehaviour
     void OnPlayerBite() => PlayAll(playerBite, DragonState.PlayerBite);
     void OnRoar() => PlayAll(roar, DragonState.Rage);
 
+    void OnIntroStarted() => StartLoops(true);
+
     void OnDishStarted(int index, int length)
     {
-        if (index == 0) StartLoops();
+        if (index == 0) StartLoops(false);
         PlayAll(dishStarted);
     }
 
@@ -154,13 +162,15 @@ public class SoundManager : MonoBehaviour
         PlayAll(cues);
     }
 
-    void StartLoops()
+    // Intro: only the loops marked for it. Run start: every loop that is not already playing.
+    void StartLoops(bool intro)
     {
         StopAllCoroutines();
         loopsFading = false;
         for (int i = 0; i < runLoops.Length; i++)
         {
             if (runLoops[i].cue == null) continue;
+            if (intro ? !runLoops[i].startWithIntro : loopSources[i].isPlaying) continue;
             runLoops[i].cue.PlayOn(loopSources[i]);
             loopBase[i] = loopSources[i].volume;
         }

@@ -18,6 +18,10 @@ AudioMixerController:
   m_ExposedParameters:
   - guid: 6668140caf9546c4990de80a76f3e165
     name: MusicPitchShift
+  - guid: 72a72c0ef9354e1eba006c390a14487d
+    name: SFXVolume
+  - guid: 97d2bc0398084c3b8e150c681b047c33
+    name: AmbienceVolume
   m_AudioMixerGroupViews:
   - guids:
     - dd2d496d125c4a0fab91c3c2f37706e0

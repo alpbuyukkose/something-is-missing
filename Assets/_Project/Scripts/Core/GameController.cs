@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum GameState { Playing, Serving, DishTransition, TimeUp, Final, ForkEaten }
+public enum GameState { NotStarted, Playing, Serving, DishTransition, TimeUp, Final, ForkEaten }
 
 public class GameController : MonoBehaviour
 {
@@ -24,6 +24,8 @@ public class GameController : MonoBehaviour
     public event Action Restarted;
 
     public GameState State { get; private set; }
+    public int Difficulty { get; private set; }
+    public IReadOnlyList<GameConfig.Difficulty> Difficulties => config.difficulties;
     public int DishIndex { get; private set; }
     public IReadOnlyList<IngredientData> CurrentRecipe => recipe;
     public IReadOnlyList<IngredientData> Plate => plate;
@@ -35,11 +37,16 @@ public class GameController : MonoBehaviour
     void OnEnable() => timer.Expired += OnTimeUp;
     void OnDisable() => timer.Expired -= OnTimeUp;
 
-    void Start() => StartRun();
-
-    void StartRun()
+    // Starts a run at this difficulty, or restarts the current one. Called by the menu.
+    public void StartRun(int difficulty)
     {
-        timer.Restart();
+        if (State != GameState.NotStarted)
+        {
+            StopAllCoroutines();
+            Restarted?.Invoke();
+        }
+        Difficulty = Mathf.Clamp(difficulty, 0, config.difficulties.Count - 1);
+        timer.Restart(config.difficulties[Difficulty].runDuration);
         StartDish(0);
     }
 
@@ -70,12 +77,11 @@ public class GameController : MonoBehaviour
         return true;
     }
 
+    // Same difficulty again, after an ending.
     public bool TryRestart()
     {
         if (State is not (GameState.TimeUp or GameState.Final or GameState.ForkEaten)) return false;
-        StopAllCoroutines();
-        Restarted?.Invoke();
-        StartRun();
+        StartRun(Difficulty);
         return true;
     }
 

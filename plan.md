@@ -339,3 +339,22 @@ Boş Unity 6.3 URP şablonu (`Assets/` içinde sadece SampleScene + TutorialInfo
 - [x] Malzeme uçuşu (PlateView > Move): gidiş/dönüşte kendi dikey ekseninde 1 tam tur (görsel merkez etrafında), kavis yüksekliği ±%30 rastgele, varışta %15 basılıp oturma (0.18 sn).
 - [x] Diyalog satırları çok satırlı yazılabilir (TextArea). Final: 'Perfect... but something is still missing -' + alt satırda ortalı '*YOU*!'. Doğru yemekten sonra bir sonraki yemek cümlenin bitmesini bekliyor, sonra nextDishDelay (1.5 sn).
 - [x] Diyalogda '|' = yeni cümle (önceki kısım pageHold 0.8 sn kalır, silinir, sonraki ayrı yazılır; IsTyping hepsi bitene kadar true). Final: 'Perfect... but something is still missing|*YOU*!'.
+
+## Menü + zorluk (2026-11-07, onaylandı)
+- Zorluklar (GameConfig): "I'm a coward" 180 sn, "I like pressure" 120 sn, "I'm a fucking genius" 88 sn. Süre yazılmaz.
+- Ana menü: tam siyah, glow'lu/titreyen yazı, sıfırdan belirir. Start ortada, Exit sağ altta. Start → aynı ekranda 3 zorluk dağınık belirir (ESC geri).
+- Şiir: siyah ekranda lorem ipsum 4-5 satır, tıklayınca atlanır, her başlangıçta. Sonra perde açılır, run başlar.
+- ESC (oyun durmaz, tıklamalar oyuna gitmez): Difficulty sol üst (altına satır satır açılır, "Restart?" onayı, şiirsiz yeniden başlar), Settings orta (SFX, Ambience), Exit sağ alt (oyunu kapatır). Bitiş ekranından da ESC.
+- Bitiş ekranı aynı yazı stilinde. R: aynı zorlukla, şiirsiz restart.
+- Kayıt: zorluk + ses ayarları (PlayerPrefs).
+- Müzik kaldırılıyor (MusicPlayer + jamtasyon), Music kanalı kalıyor.
+
+- [x] Kod  - [x] Mixer (SFXVolume, AmbienceVolume açıldı; kaydırıcı kanalın kendi seviyesine göre)  - [x] Sahne/UI (Menu canvas, EventSystem, bitiş ekranı yeni stil)  - [x] Test (başlık → zorluk → şiir → oyun; ESC menüsü, zorluk değiştirme + Restart?, ayarlar, bitişten ESC, R)
+- [x] Menü yazıları ~%25-30 küçültüldü (Start 84, zorluklar 60, ESC başlıkları 56, seçenekler 42, ayar etiketleri 36, Exit 46, şiir 44, bitiş 46/28); kaydırıcılar 380x6, tutamak 12.
+- [x] Şiir (Tahm Kench sinematiği tonundan ilhamla, özgün): 4 satır + ikinci sayfada kırmızı 'For now...' (foreshadowing). Şiir pageHold 1.5 sn. Atlanamaz (tıklama/ESC kapalı).
+- [x] Run Loops'a 'Start With Intro': dark drone şiirle başlar, oyuna kesintisiz devam eder (GameMenu.IntroStarted). Kum saati oyunla başlar. Şiir hızları: 16 harf/sn, cümle sonu 0.7, '...' 0.7, virgül 0.2, page hold 2, poem hold 2.
+- [x] Şiir bloğu: satırlar sola yaslı, blok en uzun satıra göre ekranda ortalı (DialogTypewriter 'Fit Width To Text').
+- [x] Şiir son hali: There's a dragon down where the sun is forgotten. / Everyone he's ever known is in his belly now. / Keep him fed, and maybe you'll feel the sun's warmth again. / Till then, you're what his bottomless hunger is missing. | For now... — hizalama MidlineLeft (harf geometrisine göre dikey ortalı; ölçüm: üst 450 / alt 453 px).
+- [x] Şiir güncel: There's a dragon down where the sun is forgotten. / Everyone who knows him becomes part of him. / Keep him fed, and maybe you'll feel the sun's warmth again. / You're the missing piece of his bottomless hunger. | For now...
+- [x] Şiir son hali (kullanıcının taslağından): This dragon is not one you know. / He is older than the word itself. / His bottomless hunger has been told a thousand times, and forgotten just as often. / But don't you forget. Him. His hunger. / Every dish you bring him will be missing something. | For now...
+- [x] Kum saati akışı: Hourglass/Body/SandStream particle (stretched, M_SandStream Simple Lit, 220/sn, boyut 0.003-0.0045, Local). HourglassView ömrü alt kum yüzeyine göre ayarlar; sadece süre akarken akar.

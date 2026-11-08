@@ -2,25 +2,21 @@ using System;
 using UnityEngine;
 
 // The run's single clock: starts with the first dish, never pauses, stops at an ending.
-// The hourglass (and later the music) read RemainingNormalized.
+// The hourglass and the run loops read RemainingNormalized.
 public class RunTimer : MonoBehaviour
 {
-    [Tooltip("Seconds for the whole run, all dishes together.")]
-    [Min(1f)]
-    [SerializeField] float runDuration = 200f;
-
     public event Action Expired;
 
     public bool Running { get; private set; }
-    public float Remaining { get; private set; }
+    public float Duration { get; private set; } = 1f;
+    public float Remaining { get; private set; } = 1f;
     // 1 at the start, 0 when time is up.
-    public float RemainingNormalized => Remaining / runDuration;
+    public float RemainingNormalized => Remaining / Duration;
 
-    void Awake() => Remaining = runDuration;
-
-    public void Restart()
+    public void Restart(float duration)
     {
-        Remaining = runDuration;
+        Duration = Mathf.Max(1f, duration);
+        Remaining = Duration;
         Running = true;
     }
 

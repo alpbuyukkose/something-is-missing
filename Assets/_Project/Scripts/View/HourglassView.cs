@@ -27,6 +27,10 @@ public class HourglassView : MonoBehaviour
     [SerializeField] Renderer topSand;
     [SerializeField] Renderer bottomSand;
 
+    [Header("Falling Sand")]
+    [Tooltip("Optional. Grains falling from the neck; each lives just long enough to reach the bottom sand. Flows only while the timer runs.")]
+    [SerializeField] ParticleSystem sandStream;
+
     [Header("Tension")]
     [Tooltip("From most time left to least. Values blend between neighbouring stages.")]
     [SerializeField] Stage[] stages =
@@ -63,8 +67,24 @@ public class HourglassView : MonoBehaviour
     void Update()
     {
         float remaining = timer.RemainingNormalized;
-        if (HasSand) SetSand(remaining, 1f - remaining);
         Tremble(Evaluate(remaining));
+        if (!HasSand) return;
+        SetSand(remaining, 1f - remaining);
+        if (sandStream != null) UpdateStream(timer.Running && remaining > 0.002f, 1f - remaining);
+    }
+
+    void UpdateStream(bool flowing, float bottomLevel)
+    {
+        var emission = sandStream.emission;
+        emission.enabled = flowing;
+        if (!flowing) return;
+        // Fall time from the neck to the bottom sand's surface: d = v0 t + g t^2 / 2.
+        var main = sandStream.main;
+        float surface = body.TransformPoint(0f, Mathf.Lerp(bottomRange.x, bottomRange.y, bottomLevel), 0f).y;
+        float d = Mathf.Max(0f, sandStream.transform.position.y - surface);
+        float v0 = main.startSpeed.constant;
+        float g = Physics.gravity.magnitude * main.gravityModifier.constant;
+        main.startLifetime = Mathf.Max(0.01f, (Mathf.Sqrt(v0 * v0 + 2f * g * d) - v0) / g);
     }
 
     void Tremble(Stage s)

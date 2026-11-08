@@ -4,6 +4,22 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Something Is Missing/Game Config", fileName = "GameConfig")]
 public class GameConfig : ScriptableObject
 {
+    [System.Serializable]
+    public class Difficulty
+    {
+        public string name;
+        [Tooltip("Seconds for the whole run, all dishes together.")]
+        [Min(1f)] public float runDuration = 120f;
+    }
+
+    [Tooltip("Shown in the menus, in this order.")]
+    public List<Difficulty> difficulties = new()
+    {
+        new() { name = "I'm a coward", runDuration = 180f },
+        new() { name = "I like pressure", runDuration = 120f },
+        new() { name = "I'm a fucking genius", runDuration = 88f },
+    };
+
     public List<IngredientData> ingredients = new();
     [Tooltip("Can be put on the plate like an ingredient, but never part of a recipe. Serving it ends the run.")]
     public IngredientData fork;

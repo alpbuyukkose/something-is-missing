@@ -23,6 +23,7 @@ public class GameInput : MonoBehaviour
 
     void OnDisable()
     {
+        if (hover != null) hover.SetHovered(null);
         point.Disable();
         click.Disable();
         restart.Disable();
